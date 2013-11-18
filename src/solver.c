@@ -21,7 +21,7 @@ char *strdup(const char *str) {
   return dup;
 }
 
-struct Town *read_tsp(char *path, int *n, int *cols) {
+struct Town *tsp_open(char *path, int *n) {
   FILE* file = fopen(path, "r");
   struct Town* towns = NULL;
   int offset = 0;
@@ -48,16 +48,48 @@ struct Town *read_tsp(char *path, int *n, int *cols) {
     towns[(*n) - 1] = town;
   }
   
-  *cols = POS((*n)-2, (*n)-1, (*n)) - 1;
-  
   fclose(file);
   
   return towns;
 }
 
-double *problem(struct Town* t, int n, int cols, int *points, CPLEX *cplex) {
-  // distance matrix
+Problem *tsp_init(char *name) {
+  // Load the TSP file
+  int n = 0; // no. of towns
+  struct Town *towns = tsp_open(name, &n);
+  
+  // The number of unique pairs of towns
+  int cols = POS(n-2, n-1, n) - 1;
+  
   double *dists = malloc(sizeof(double) * cols);
+  int *points = malloc(sizeof(int) * cols * 2);
+  
+  for (int i = 0; i < n; ++i) {
+    if (i >= n - 1) continue;
+    
+    for (int j = i + 1; j < n; ++j) {
+      if (i == j) continue;
+      int pos = POS(i, j, n);
+      
+      dists[pos] = hsine(towns[i].y, towns[i].x, towns[j].y, towns[j].x);
+      points[pos * 2] = i;
+      points[pos * 2 + 1] = j;
+    }
+  }
+  
+  Problem *problem = malloc(sizeof(Problem));
+  problem->n = n;
+  problem->cols = cols;
+  problem->points = points;
+  problem->distances = dists;
+  
+  return problem;
+}
+
+void cplex_init(Problem *problem, CPLEX *cplex) {
+  int n = problem->n;
+  int cols = problem->cols;
+  double *dists = problem->distances;
   
   int *visits = malloc(sizeof(int) * n * n - n);
   double *rmatval = malloc(sizeof(double) * n * n - n);
@@ -80,37 +112,30 @@ double *problem(struct Town* t, int n, int cols, int *points, CPLEX *cplex) {
     rhs[i] = 2;
     senses[i] = 'E';
     rmatbeg[i] = i * (n-1);
+  }
+  
+  for (int pos = 0; pos < cols; ++pos) {
+    int i = problem->points[pos*2];
+    int j = problem->points[pos*2 + 1];
     
-    if (i >= n - 1) continue; // all points added
+    printf("(%d,%d)\n", i, j);
     
-    for (int j = i + 1; j < n; ++j) {
-      if (i == j) continue;
-      int pos = POS(i, j, n);
-      
-      int first  = (i * (n-1)) + (j-1);
-      int second = (j * (n-1)) + i;
-      visits[first] = visits[second] = pos;
-      rmatval[first] = rmatval[second] = 1;
-      
-      dists[pos] = hsine(t[i].y, t[i].x, t[j].y, t[j].x);
-      
-      sprintf(str, "x(%d,%d)", i+1, j+1);
-      headers[pos] = strdup(str);
-      
-      lb[pos] = 0;
-      ub[pos] = 1;
-      ctype[pos] = CPX_BINARY; // set the var to binary (value of 1 or 0)
-      
-      points[pos * 2] = i;
-      points[pos * 2 + 1] = j;
-    }
+    int first  = (i * (n-1)) + (j-1);
+    int second = (j * (n-1)) + i;
+    visits[first] = visits[second] = pos;
+    rmatval[first] = rmatval[second] = 1;
+    
+    sprintf(str, "x(%d,%d)", i+1, j+1);
+    headers[pos] = strdup(str);
+    
+    lb[pos] = 0;
+    ub[pos] = 1;
+    ctype[pos] = CPX_BINARY; // set the var to binary (value of 1 or 0)
   }
   
   CPXnewcols(cplex->env, cplex->lp, cols, dists, lb, ub, ctype, headers);
   CPXaddrows(cplex->env, cplex->lp, 0, n, n*n-n, rhs, senses, rmatbeg,
              visits, rmatval, NULL, contraints);
-  
-  return dists;
 }
 
 // Starts the CPLEX environment
@@ -192,21 +217,4 @@ void cplex_constrain(PassOutput *output, CPLEX *cplex) {
     CPXaddrows(cplex->env, cplex->lp, 0, 1, subtour->n, rhs, senses,
                rmatbeg, subtour->tour, rmatval, NULL, contraints);
   }
-}
-
-Problem *init_problem(char *name, CPLEX *cplex) {
-  // load the TSP file
-  int n = 0, cols = 0; // n = no. of towns. cols = no. of solution vars
-  struct Town *towns = read_tsp(name, &n, &cols);
-  
-  int *points = malloc(sizeof(int) * cols * 2);
-  double *distances = problem(towns, n, cols, points, cplex);
-  
-  Problem *problem = malloc(sizeof(Problem));
-  problem->n = n;
-  problem->cols = cols;
-  problem->points = points;
-  problem->distances = distances;
-  
-  return problem;
 }
