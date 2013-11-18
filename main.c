@@ -1,7 +1,3 @@
-#include <stdlib.h>
-#include <string.h>
-#include <stdio.h>
-
 #include <ilcplex/cplex.h>
 
 #include "timer.c"
@@ -12,10 +8,7 @@ int main() {
   struct timespec *start = timer_start();
   
   CPLEX *cplex = cplex_start();
-  // open the problem, read in the number of towns, distances, etc.
   Problem *problem = init_problem("./data/ire100.tsp", cplex);
-  
-  //CPXwriteprob(env, lp, "problem.lp", "LP");
   
   int presolve = timer_end(start);
   printf("Presolve time: %dms\n\n", presolve);
@@ -23,14 +16,14 @@ int main() {
   
   PassOutput *output = NULL;
   while (1) {
-   output = cplex_pass(problem, output, cplex);
-   
-   printf("%3d   %-8.2f   %-8d   %dms\n"
-         , output->i, output->distance, output->n, output->cplex_time);
-   
-   if (output->n == 1) break;
-   
-   cplex_constrain(output, cplex);
+    output = cplex_pass(problem, output, cplex);
+    
+    printf("%3d   %-8.2f   %-8d   %dms\n",
+           output->i, output->distance, output->n, output->cplex_time);
+    
+    if (output->n == 1) break;
+    
+    cplex_constrain(output, cplex);
   }
   
   int total = timer_end(start);

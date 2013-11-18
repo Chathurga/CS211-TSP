@@ -126,6 +126,8 @@ CPLEX * cplex_start() {
   CPXchgprobtype(env, lp, CPXPROB_MILP); // mixed integer problem
   CPXchgobjsen(env, lp, CPX_MIN); // objective is minimization
   
+  //CPXwriteprob(env, lp, "problem.lp", "LP");
+  
   CPLEX *cplex = malloc(sizeof(CPLEX));
   cplex->env = env;
   cplex->lp = lp;
