@@ -1,8 +1,8 @@
 #include <stdlib.h>
 #include <string.h>
+#include <stdio.h>
 
 #include <ilcplex/cplex.h>
-//#include "dud.c"
 
 #define POS(i, j, n) (((i+1) * n) - ((i+1) * (i+2) >> 1) - (n - j))
 
@@ -14,6 +14,7 @@ int main() {
   struct timespec *start = timer_start();
   
   CPLEX *cplex = cplex_start();
+  // open the problem, read in the number of towns, distances, etc.
   Problem *problem = init_problem("./data/ire100.tsp", cplex);
   
   //CPXwriteprob(env, lp, "problem.lp", "LP");
