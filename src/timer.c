@@ -1,15 +1,11 @@
+/*
+ *  Simple timer functions
+ */
+
 #include <time.h>
 
-int timer_diff(struct timespec *end, struct timespec *start) {
-  int factor = 1000 * 1000;
-  
-  int ndiff = (end->tv_nsec / factor) - (start->tv_nsec / factor);
-  int sdiff = end->tv_sec - start->tv_sec;
-  
-  return (sdiff * 1000) + ndiff;
-}
-
-struct timespec * timer_start() {
+// Starts a timer
+struct timespec *timer_start() {
   struct timespec *start = malloc(sizeof(struct timespec));
   
   clock_gettime(CLOCK_MONOTONIC, start);
@@ -17,10 +13,17 @@ struct timespec * timer_start() {
   return start;
 }
 
+// Calculates the time elapsed between some timer and now
+// Returns the time in milliseconds
 int timer_end(struct timespec *start) {
-  struct timespec *end = malloc(sizeof(struct timespec));
+  struct timespec *end = timer_start();
   
-  clock_gettime(CLOCK_MONOTONIC, end);
+  int factor = 1000 * 1000;
   
-  return timer_diff(end, start);
+  int ndiff = (end->tv_nsec / factor) - (start->tv_nsec / factor);
+  int sdiff = end->tv_sec - start->tv_sec;
+  
+  free(end);
+  
+  return (sdiff * 1000) + ndiff;
 }
