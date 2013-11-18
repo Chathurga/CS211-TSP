@@ -4,8 +4,6 @@
 
 #include <ilcplex/cplex.h>
 
-#define POS(i, j, n) (((i+1) * n) - ((i+1) * (i+2) >> 1) - (n - j))
-
 #include "timer.c"
 #include "tour.c"
 #include "solver.c"

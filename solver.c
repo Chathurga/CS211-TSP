@@ -10,6 +10,9 @@
 #include <string.h>
 
 #include "solver.h"
+#include "distance.c"
+
+#define POS(i, j, n) (((i+1) * n) - ((i+1) * (i+2) >> 1) - (n - j))
 
 char *strdup(const char *str) {
   int n = strlen(str) + 1;
@@ -21,9 +24,9 @@ char *strdup(const char *str) {
 struct Town *read_tsp(char *path, int *n, int *cols) {
   FILE* file = fopen(path, "r");
   struct Town* towns = NULL;
+  int offset = 0;
   int line_size = 100;
   char line[line_size];
-  int offset = 0;
   
   while(fgets(line, line_size, file)) {
     char *num, *x, *y;
@@ -46,6 +49,7 @@ struct Town *read_tsp(char *path, int *n, int *cols) {
   }
   
   *cols = POS((*n)-2, (*n)-1, (*n)) - 1;
+  
   fclose(file);
   
   return towns;
@@ -188,7 +192,7 @@ void cplex_constrain(PassOutput *output, CPLEX *cplex) {
   }
 }
 
-Problem * init_problem(char *name, CPLEX *cplex) {
+Problem *init_problem(char *name, CPLEX *cplex) {
   // load the TSP file
   int n = 0, cols = 0; // n = no. of towns. cols = no. of solution vars
   struct Town *towns = read_tsp(name, &n, &cols);
