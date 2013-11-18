@@ -9,8 +9,8 @@ struct Town {
 typedef struct {
   int n;       // number of towns
   int cols;    // number of columns
-  int *points; // array of vertex numbers
   double *distances;
+  int *points; // array of vertex numbers
 } Problem;
 
 // Contains all relevant variables for a CPLEX instance
@@ -33,7 +33,7 @@ typedef struct {
 
 CPLEX cplex_start();
 
-PassOutput * cplex_pass(Problem *problem, PassOutput *prev, CPLEX clpex);
+PassOutput * cplex_pass(Problem problem, PassOutput *prev, CPLEX clpex);
 
 void cplex_constrain(PassOutput *output, CPLEX cplex);
 

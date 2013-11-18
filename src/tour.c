@@ -11,10 +11,10 @@ int shortest(const void *a, const void *b) {
   return 0;
 }
 
-Subtour * next_subtour(Problem *problem, int *vars) {
+Subtour * next_subtour(Problem problem, int *vars) {
   // find the next subtour 'starting' point
   int start = -1;
-  for (int i = 0; i < problem->n; ++i) {
+  for (int i = 0; i < problem.n; ++i) {
     if (vars[i] != -1) {
       start = i;
       break;
@@ -25,20 +25,20 @@ Subtour * next_subtour(Problem *problem, int *vars) {
   
   Subtour *subtour = malloc(sizeof(Subtour));
   subtour->n = 1;
-  subtour->tour = malloc(sizeof(int) * problem->n);
+  subtour->tour = malloc(sizeof(int) * problem.n);
   subtour->tour[0] = vars[start];
   vars[start] = -1;
   
   while(1) {
     int fst1, fst2, snd1, snd2;
-    get_points(fst, problem->points, subtour->tour[0]);
-    get_points(snd, problem->points, subtour->tour[subtour->n - 1]);
+    get_points(fst, problem.points, subtour->tour[0]);
+    get_points(snd, problem.points, subtour->tour[subtour->n - 1]);
     
-    for (int i = start + 1; i < problem->n; ++i) {
+    for (int i = start + 1; i < problem.n; ++i) {
       if (vars[i] == -1) continue;
       
       int cur1, cur2;
-      get_points(cur, problem->points, vars[i]);
+      get_points(cur, problem.points, vars[i]);
       
       int m1 = match_points(cur, fst);
       int m2 = match_points(cur, snd);
@@ -62,8 +62,8 @@ Subtour * next_subtour(Problem *problem, int *vars) {
       vars[i] = -1;
     }
     
-    get_points(fst, problem->points, subtour->tour[0]);
-    get_points(snd, problem->points, subtour->tour[subtour->n - 1]);
+    get_points(fst, problem.points, subtour->tour[0]);
+    get_points(snd, problem.points, subtour->tour[subtour->n - 1]);
     
     // subtour loop found
     if (match_points(fst, snd)) break;
