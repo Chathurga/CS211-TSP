@@ -22,5 +22,5 @@ int timer_end(struct timespec *start) {
   
   clock_gettime(CLOCK_MONOTONIC, end);
   
-  timer_diff(end, start);
+  return timer_diff(end, start);
 }
