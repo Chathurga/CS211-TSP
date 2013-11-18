@@ -1,4 +1,6 @@
-/* Contains methods for calculating the distnace between two points */
+/*
+ * Contains methods for calculating the distnace between two points
+ */
 
 #include <math.h>
 
@@ -7,8 +9,13 @@
 static const double R = 6371; // radius of the Earth
 
 double radians(double val) {
-  return val * (M_PI/180.0);
+  return val * (M_PI / 180.0);
 }
+
+// Distance Functions
+// Can be used as the function that calculates the distance between towns
+// Use hsine if the towns are points on a globe
+// Use point_dist if they are just co-ordinates on a simple x/y plane
 
 // Calculates the Haversine distance between two points on a sphere
 // http://en.wikipedia.org/wiki/Haversine_formula
