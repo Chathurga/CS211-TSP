@@ -1,6 +1,11 @@
 #ifndef SOLVER_HEADER
 #define SOLVER_HEADER
 
+struct Town {
+  int num;
+  float x, y;
+};
+
 typedef struct {
   int n;       // number of towns
   int cols;    // number of columns
