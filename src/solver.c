@@ -86,7 +86,7 @@ Problem *tsp_init(char *name) {
   return problem;
 }
 
-void cplex_init(Problem *problem, CPLEX *cplex) {
+void cplex_init(Problem *problem, CPLEX cplex) {
   int n = problem->n;
   int cols = problem->cols;
   double *dists = problem->distances;
@@ -118,8 +118,6 @@ void cplex_init(Problem *problem, CPLEX *cplex) {
     int i = problem->points[pos*2];
     int j = problem->points[pos*2 + 1];
     
-    printf("(%d,%d)\n", i, j);
-    
     int first  = (i * (n-1)) + (j-1);
     int second = (j * (n-1)) + i;
     visits[first] = visits[second] = pos;
@@ -133,13 +131,13 @@ void cplex_init(Problem *problem, CPLEX *cplex) {
     ctype[pos] = CPX_BINARY; // set the var to binary (value of 1 or 0)
   }
   
-  CPXnewcols(cplex->env, cplex->lp, cols, dists, lb, ub, ctype, headers);
-  CPXaddrows(cplex->env, cplex->lp, 0, n, n*n-n, rhs, senses, rmatbeg,
+  CPXnewcols(cplex.env, cplex.lp, cols, dists, lb, ub, ctype, headers);
+  CPXaddrows(cplex.env, cplex.lp, 0, n, n*n-n, rhs, senses, rmatbeg,
              visits, rmatval, NULL, contraints);
 }
 
 // Starts the CPLEX environment
-CPLEX * cplex_start() {
+CPLEX cplex_start() {
   int status;
   CPXENVptr env = CPXopenCPLEX(&status);
   
@@ -153,15 +151,12 @@ CPLEX * cplex_start() {
   
   //CPXwriteprob(env, lp, "problem.lp", "LP");
   
-  CPLEX *cplex = malloc(sizeof(CPLEX));
-  cplex->env = env;
-  cplex->lp = lp;
-  cplex->status = &status;
+  CPLEX cplex = {env, lp, &status};
   
   return cplex;
 }
 
-PassOutput * cplex_pass(Problem *problem, PassOutput *prev, CPLEX *clpex) {
+PassOutput * cplex_pass(Problem *problem, PassOutput *prev, CPLEX cplex) {
   int first_run = (prev == NULL);
   double distance;
   double *x = malloc(problem->cols * sizeof(double)); // solution vars
@@ -173,8 +168,8 @@ PassOutput * cplex_pass(Problem *problem, PassOutput *prev, CPLEX *clpex) {
   
   struct timespec *cplex_start = timer_start();
   // solve the next cycle and get the solution variables
-  CPXmipopt(clpex->env, clpex->lp);
-  CPXsolution(clpex->env, clpex->lp, NULL, &(output->distance), x
+  CPXmipopt(cplex.env, cplex.lp);
+  CPXsolution(cplex.env, cplex.lp, NULL, &(output->distance), x
              , NULL, NULL, NULL);
   output->cplex_time = timer_end(cplex_start);
   
@@ -197,7 +192,7 @@ PassOutput * cplex_pass(Problem *problem, PassOutput *prev, CPLEX *clpex) {
   return output;
 }
 
-void cplex_constrain(PassOutput *output, CPLEX *cplex) {
+void cplex_constrain(PassOutput *output, CPLEX cplex) {
   for (int i = 0, half = output->n / 2; i < half; i++) {
     Subtour *subtour = output->subtours[i];
     
@@ -214,7 +209,7 @@ void cplex_constrain(PassOutput *output, CPLEX *cplex) {
     sprintf(str, "pass(%d)", output->i);
     char *contraints[1] = {strdup(str)};
     
-    CPXaddrows(cplex->env, cplex->lp, 0, 1, subtour->n, rhs, senses,
+    CPXaddrows(cplex.env, cplex.lp, 0, 1, subtour->n, rhs, senses,
                rmatbeg, subtour->tour, rmatval, NULL, contraints);
   }
 }
