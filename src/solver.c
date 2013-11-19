@@ -1,6 +1,7 @@
 /*
  * Contains functions that:
- *   Parse a well formatted file detailing a Travelling Salesman Problem
+ *   Parse and process a well formatted file detailing a Travelling Salesman
+ *   Problem
  *   Interact with IBM's CPLEX to solve the Travelling Salesman Problem using
  *   interger programming techniques
  */
@@ -82,6 +83,34 @@ Problem tsp_init(char *name) {
   return problem;
 }
 
+void tsp_cplex_end(Problem problem, CPLEX cplex, PassOutput output) {
+  // Close CPLEX and free all memory associated with it
+  CPXcloseCPLEX(&cplex.env);
+  free(problem.distances);
+  free(problem.points);
+  cycle_free(output);
+}
+
+// Starts the CPLEX environment
+CPLEX cplex_start() {
+  int status;
+  CPXENVptr env = CPXopenCPLEX(&status);
+  
+  // disable screen output and data consistency checking for speed
+  CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
+  CPXsetintparam(env, CPX_PARAM_DATACHECK, CPX_OFF);
+  
+  CPXLPptr lp = CPXcreateprob(env, &status, "tsp");
+  CPXchgprobtype(env, lp, CPXPROB_MILP); // mixed integer problem
+  CPXchgobjsen(env, lp, CPX_MIN); // objective is minimization
+  
+  //CPXwriteprob(env, lp, "problem.lp", "LP");
+  
+  CPLEX cplex = {env, lp, &status};
+  
+  return cplex;
+}
+
 PassOutput cplex_init(Problem problem, CPLEX cplex) {
   int n = problem.n;
   int cols = problem.cols;
@@ -138,26 +167,6 @@ PassOutput cplex_init(Problem problem, CPLEX cplex) {
   return output;
 }
 
-// Starts the CPLEX environment
-CPLEX cplex_start() {
-  int status;
-  CPXENVptr env = CPXopenCPLEX(&status);
-  
-  // disable screen output and data consistency checking for speed
-  CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
-  CPXsetintparam(env, CPX_PARAM_DATACHECK, CPX_OFF);
-  
-  CPXLPptr lp = CPXcreateprob(env, &status, "tsp");
-  CPXchgprobtype(env, lp, CPXPROB_MILP); // mixed integer problem
-  CPXchgobjsen(env, lp, CPX_MIN); // objective is minimization
-  
-  //CPXwriteprob(env, lp, "problem.lp", "LP");
-  
-  CPLEX cplex = {env, lp, &status};
-  
-  return cplex;
-}
-
 PassOutput cplex_pass(Problem problem, PassOutput prev, CPLEX cplex) {
   double distance;
   double *x = malloc(problem.cols * sizeof(double)); // solution vars
@@ -170,7 +179,7 @@ PassOutput cplex_pass(Problem problem, PassOutput prev, CPLEX cplex) {
   struct timespec *cplex_start = timer_start();
   // solve the next cycle and get the solution variables
   CPXmipopt(cplex.env, cplex.lp);
-  CPXsolution(cplex.env, cplex.lp, NULL, &(output.distance), x,
+  CPXsolution(cplex.env, cplex.lp, NULL, &output.distance, x,
               NULL, NULL, NULL);
   output.cplex_time = timer_end(cplex_start);
   
@@ -190,6 +199,8 @@ PassOutput cplex_pass(Problem problem, PassOutput prev, CPLEX cplex) {
   }
   
   output.work_time = timer_end(code_start);
+  cycle_free(prev);
+  
   return output;
 }
 
@@ -213,4 +224,13 @@ void cplex_constrain(PassOutput output, CPLEX cplex) {
     CPXaddrows(cplex.env, cplex.lp, 0, 1, subtour->n, rhs, senses,
                rmatbeg, subtour->tour, rmatval, NULL, contraints);
   }
+}
+
+// Free memory used by a solve cycle
+void cycle_free(PassOutput output) {
+  for (int i = 0; i < output.n; i++) {
+    free(output.subtours[i]->tour);
+  }
+  
+  free(output.subtours);
 }

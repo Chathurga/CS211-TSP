@@ -24,6 +24,8 @@ int main() {
     cplex_constrain(output, cplex);
   }
   
+  tsp_cplex_end(problem, cplex, output);
+  
   int total = timer_end(start);
   free(start);
   
