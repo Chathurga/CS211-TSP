@@ -16,12 +16,11 @@ int main() {
   printf("No.   Distance   Subtours   Time\n");
   
   while (output.n != 1) {
+    cplex_constrain(output, cplex);
     output = cplex_pass(problem, output, cplex);
     
     printf("%3d   %-8.2f   %-8d   %dms\n",
            output.i, output.distance, output.n, output.cplex_time);
-    
-    cplex_constrain(output, cplex);
   }
   
   tsp_cplex_end(problem, cplex, output);

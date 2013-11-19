@@ -205,6 +205,8 @@ PassOutput cplex_pass(Problem problem, PassOutput prev, CPLEX cplex) {
 }
 
 void cplex_constrain(PassOutput output, CPLEX cplex) {
+  if (output.n == 0) return;
+  
   for (int i = 0, half = output.n / 2; i < half; i++) {
     Subtour *subtour = output.subtours[i];
     

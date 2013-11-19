@@ -37,4 +37,6 @@ PassOutput cplex_pass(Problem problem, PassOutput prev, CPLEX clpex);
 
 void cplex_constrain(PassOutput output, CPLEX cplex);
 
+void cycle_free(PassOutput);
+
 #endif
