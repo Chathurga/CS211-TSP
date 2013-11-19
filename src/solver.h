@@ -33,8 +33,8 @@ typedef struct {
 
 CPLEX cplex_start();
 
-PassOutput * cplex_pass(Problem problem, PassOutput *prev, CPLEX clpex);
+PassOutput cplex_pass(Problem problem, PassOutput prev, CPLEX clpex);
 
-void cplex_constrain(PassOutput *output, CPLEX cplex);
+void cplex_constrain(PassOutput output, CPLEX cplex);
 
 #endif

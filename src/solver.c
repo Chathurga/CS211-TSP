@@ -82,7 +82,7 @@ Problem tsp_init(char *name) {
   return problem;
 }
 
-void cplex_init(Problem problem, CPLEX cplex) {
+PassOutput cplex_init(Problem problem, CPLEX cplex) {
   int n = problem.n;
   int cols = problem.cols;
   double *dists = problem.distances;
@@ -130,6 +130,12 @@ void cplex_init(Problem problem, CPLEX cplex) {
   CPXnewcols(cplex.env, cplex.lp, cols, dists, lb, ub, ctype, headers);
   CPXaddrows(cplex.env, cplex.lp, 0, n, n*n-n, rhs, senses, rmatbeg,
              visits, rmatval, NULL, contraints);
+  
+  PassOutput output;
+  output.i = 0;
+  output.n = -1;
+  
+  return output;
 }
 
 // Starts the CPLEX environment
@@ -152,22 +158,21 @@ CPLEX cplex_start() {
   return cplex;
 }
 
-PassOutput * cplex_pass(Problem problem, PassOutput *prev, CPLEX cplex) {
-  int first_run = (prev == NULL);
+PassOutput cplex_pass(Problem problem, PassOutput prev, CPLEX cplex) {
   double distance;
   double *x = malloc(problem.cols * sizeof(double)); // solution vars
   
-  PassOutput *output = malloc(sizeof(PassOutput));
-  output->i = (first_run) ? 1 : prev->i + 1;
-  output->n = 0;
-  output->subtours = malloc(sizeof(Subtour *) * (problem.n / 3));
+  PassOutput output;
+  output.i = prev.i + 1;
+  output.n = 0;
+  output.subtours = malloc(sizeof(Subtour *) * (problem.n / 3));
   
   struct timespec *cplex_start = timer_start();
   // solve the next cycle and get the solution variables
   CPXmipopt(cplex.env, cplex.lp);
-  CPXsolution(cplex.env, cplex.lp, NULL, &(output->distance), x
-             , NULL, NULL, NULL);
-  output->cplex_time = timer_end(cplex_start);
+  CPXsolution(cplex.env, cplex.lp, NULL, &(output.distance), x,
+              NULL, NULL, NULL);
+  output.cplex_time = timer_end(cplex_start);
   
   struct timespec *code_start = timer_start();
   // collect all active solution variables
@@ -181,16 +186,16 @@ PassOutput * cplex_pass(Problem problem, PassOutput *prev, CPLEX cplex) {
   
   Subtour *subtour;
   while (subtour = next_subtour(problem, vars)) {
-    insert_subtour(subtour, output->subtours, &(output->n));
+    insert_subtour(subtour, output.subtours, &(output.n));
   }
   
-  output->work_time = timer_end(code_start);
+  output.work_time = timer_end(code_start);
   return output;
 }
 
-void cplex_constrain(PassOutput *output, CPLEX cplex) {
-  for (int i = 0, half = output->n / 2; i < half; i++) {
-    Subtour *subtour = output->subtours[i];
+void cplex_constrain(PassOutput output, CPLEX cplex) {
+  for (int i = 0, half = output.n / 2; i < half; i++) {
+    Subtour *subtour = output.subtours[i];
     
     double rhs[1] = {subtour->n - 1};
     char senses[1] = {'L'};
@@ -202,7 +207,7 @@ void cplex_constrain(PassOutput *output, CPLEX cplex) {
     }
     
     char str[16];
-    sprintf(str, "pass(%d)", output->i);
+    sprintf(str, "pass(%d)", output.i);
     char *contraints[1] = {strdup(str)};
     
     CPXaddrows(cplex.env, cplex.lp, 0, 1, subtour->n, rhs, senses,
