@@ -11,7 +11,7 @@ typedef struct {
   int cols;    // number of columns
   double *distances;
   int *points; // array of vertex numbers
-} Problem;
+} TSP;
 
 // Contains all relevant variables for a CPLEX instance
 typedef struct {
@@ -33,9 +33,9 @@ typedef struct {
 
 CPLEX cplex_start();
 
-PassOutput cplex_pass(Problem problem, PassOutput prev, CPLEX clpex);
+PassOutput cplex_pass(TSP, PassOutput, CPLEX);
 
-void cplex_constrain(PassOutput output, CPLEX cplex);
+void cplex_constrain(PassOutput, CPLEX);
 
 void cycle_free(PassOutput);
 

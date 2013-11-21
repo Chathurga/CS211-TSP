@@ -54,7 +54,7 @@ struct Town *tsp_open(char *path, int *n) {
   return towns;
 }
 
-Problem tsp_init(char *name) {
+TSP tsp_init(char *name) {
   // Load the TSP file
   int n = 0; // no. of towns
   struct Town *towns = tsp_open(name, &n);
@@ -78,16 +78,16 @@ Problem tsp_init(char *name) {
     }
   }
   
-  Problem problem = {n, cols, dists, points};
+  TSP tsp = {n, cols, dists, points};
   
-  return problem;
+  return tsp;
 }
 
-void tsp_cplex_end(Problem problem, CPLEX cplex, PassOutput output) {
+void tsp_cplex_end(TSP tsp, CPLEX cplex, PassOutput output) {
   // Close CPLEX and free all memory associated with it
   CPXcloseCPLEX(&cplex.env);
-  free(problem.distances);
-  free(problem.points);
+  free(tsp.distances);
+  free(tsp.points);
   cycle_free(output);
 }
 
@@ -111,10 +111,10 @@ CPLEX cplex_start() {
   return cplex;
 }
 
-PassOutput cplex_init(Problem problem, CPLEX cplex) {
-  int n = problem.n;
-  int cols = problem.cols;
-  double *dists = problem.distances;
+PassOutput cplex_init(TSP tsp, CPLEX cplex) {
+  int n = tsp.n;
+  int cols = tsp.cols;
+  double *dists = tsp.distances;
   
   int *visits = malloc(sizeof(int) * n * n - n);
   double *rmatval = malloc(sizeof(double) * n * n - n);
@@ -140,8 +140,8 @@ PassOutput cplex_init(Problem problem, CPLEX cplex) {
   }
   
   for (int pos = 0; pos < cols; ++pos) {
-    int i = problem.points[pos*2];
-    int j = problem.points[pos*2 + 1];
+    int i = tsp.points[pos*2];
+    int j = tsp.points[pos*2 + 1];
     
     int first  = (i * (n-1)) + (j-1);
     int second = (j * (n-1)) + i;
@@ -167,14 +167,14 @@ PassOutput cplex_init(Problem problem, CPLEX cplex) {
   return output;
 }
 
-PassOutput cplex_pass(Problem problem, PassOutput prev, CPLEX cplex) {
+PassOutput cplex_pass(TSP tsp, PassOutput prev, CPLEX cplex) {
   double distance;
-  double *x = malloc(problem.cols * sizeof(double)); // solution vars
+  double *x = malloc(tsp.cols * sizeof(double)); // solution vars
   
   PassOutput output;
   output.i = prev.i + 1;
   output.n = 0;
-  output.subtours = malloc(sizeof(Subtour *) * (problem.n / 3));
+  output.subtours = malloc(sizeof(Subtour *) * (tsp.n / 3));
   
   struct timespec *cplex_start = timer_start();
   // solve the next cycle and get the solution variables
@@ -186,15 +186,15 @@ PassOutput cplex_pass(Problem problem, PassOutput prev, CPLEX cplex) {
   struct timespec *code_start = timer_start();
   // collect all active solution variables
   int count = 0;
-  int *vars = malloc(sizeof(int) * problem.n);
-  for (int i = 0; i < problem.cols; ++i) {
+  int *vars = malloc(sizeof(int) * tsp.n);
+  for (int i = 0; i < tsp.cols; ++i) {
     if (x[i] == 0) continue;
     vars[count++] = i;
-    if (count == problem.n) break;
+    if (count == tsp.n) break;
   }
   
   Subtour *subtour;
-  while (subtour = next_subtour(problem, vars)) {
+  while (subtour = next_subtour(tsp, vars)) {
     insert_subtour(subtour, output.subtours, &(output.n));
   }
   

@@ -7,9 +7,9 @@
 int main() {
   struct timespec *start = timer_start();
   
-  Problem problem = tsp_init("./data/ire100.tsp");
+  TSP tsp = tsp_init("./data/ire100.tsp");
   CPLEX cplex = cplex_start();
-  PassOutput output = cplex_init(problem, cplex);
+  PassOutput output = cplex_init(tsp, cplex);
   
   int presolve = timer_end(start);
   printf("Presolve time: %dms\n\n", presolve);
@@ -17,13 +17,13 @@ int main() {
   
   while (output.n != 1) {
     cplex_constrain(output, cplex);
-    output = cplex_pass(problem, output, cplex);
+    output = cplex_pass(tsp, output, cplex);
     
     printf("%3d   %-8.2f   %-8d   %dms\n",
            output.i, output.distance, output.n, output.cplex_time);
   }
   
-  tsp_cplex_end(problem, cplex, output);
+  tsp_cplex_end(tsp, cplex, output);
   
   int total = timer_end(start);
   free(start);
