@@ -33,7 +33,7 @@ typedef struct {
 
 CPLEX cplex_start();
 
-Solution cplex_pass(TSP, Solution, CPLEX);
+Solution cplex_solve(TSP, Solution, CPLEX);
 
 void cplex_constrain(Solution, CPLEX);
 

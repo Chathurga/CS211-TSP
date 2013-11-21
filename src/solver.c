@@ -167,7 +167,7 @@ Solution cplex_init(TSP tsp, CPLEX cplex) {
   return solution;
 }
 
-Solution cplex_pass(TSP tsp, Solution prev, CPLEX cplex) {
+Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
   double distance;
   double *x = malloc(tsp.cols * sizeof(double)); // solution vars
   

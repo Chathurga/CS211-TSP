@@ -4,6 +4,10 @@
 #include "tour.c"
 #include "solver.c"
 
+char *choose_file(char *dir_path) {
+  
+}
+
 int main() {
   struct timespec *start = timer_start();
   
@@ -17,7 +21,7 @@ int main() {
   
   while (solution.n != 1) {
     cplex_constrain(solution, cplex);
-    solution = cplex_pass(tsp, solution, cplex);
+    solution = cplex_solve(tsp, solution, cplex);
     
     printf("%3d   %-8.2f   %-8d   %dms\n",
            solution.i, solution.distance, solution.n, solution.cplex_time);
