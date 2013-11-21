@@ -29,14 +29,14 @@ typedef struct {
   
   int n;              // the number of subtours generated
   Subtour **subtours; // list of subtours sorted by length
-} PassOutput;
+} Solution;
 
 CPLEX cplex_start();
 
-PassOutput cplex_pass(TSP, PassOutput, CPLEX);
+Solution cplex_pass(TSP, Solution, CPLEX);
 
-void cplex_constrain(PassOutput, CPLEX);
+void cplex_constrain(Solution, CPLEX);
 
-void cycle_free(PassOutput);
+void cycle_free(Solution);
 
 #endif

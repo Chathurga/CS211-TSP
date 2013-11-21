@@ -83,12 +83,12 @@ TSP tsp_init(char *name) {
   return tsp;
 }
 
-void tsp_cplex_end(TSP tsp, CPLEX cplex, PassOutput output) {
+void tsp_cplex_end(TSP tsp, CPLEX cplex, Solution solution) {
   // Close CPLEX and free all memory associated with it
   CPXcloseCPLEX(&cplex.env);
   free(tsp.distances);
   free(tsp.points);
-  cycle_free(output);
+  cycle_free(solution);
 }
 
 // Starts the CPLEX environment
@@ -96,7 +96,7 @@ CPLEX cplex_start() {
   int status;
   CPXENVptr env = CPXopenCPLEX(&status);
   
-  // disable screen output and data consistency checking for speed
+  // disable screen solution and data consistency checking for speed
   CPXsetintparam(env, CPX_PARAM_SCRIND, CPX_OFF);
   CPXsetintparam(env, CPX_PARAM_DATACHECK, CPX_OFF);
   
@@ -111,7 +111,7 @@ CPLEX cplex_start() {
   return cplex;
 }
 
-PassOutput cplex_init(TSP tsp, CPLEX cplex) {
+Solution cplex_init(TSP tsp, CPLEX cplex) {
   int n = tsp.n;
   int cols = tsp.cols;
   double *dists = tsp.distances;
@@ -160,28 +160,28 @@ PassOutput cplex_init(TSP tsp, CPLEX cplex) {
   CPXaddrows(cplex.env, cplex.lp, 0, n, n*n-n, rhs, senses, rmatbeg,
              visits, rmatval, NULL, contraints);
   
-  PassOutput output;
-  output.i = 0;
-  output.n = -1;
+  Solution solution;
+  solution.i = 0;
+  solution.n = -1;
   
-  return output;
+  return solution;
 }
 
-PassOutput cplex_pass(TSP tsp, PassOutput prev, CPLEX cplex) {
+Solution cplex_pass(TSP tsp, Solution prev, CPLEX cplex) {
   double distance;
   double *x = malloc(tsp.cols * sizeof(double)); // solution vars
   
-  PassOutput output;
-  output.i = prev.i + 1;
-  output.n = 0;
-  output.subtours = malloc(sizeof(Subtour *) * (tsp.n / 3));
+  Solution solution;
+  solution.i = prev.i + 1;
+  solution.n = 0;
+  solution.subtours = malloc(sizeof(Subtour *) * (tsp.n / 3));
   
   struct timespec *cplex_start = timer_start();
   // solve the next cycle and get the solution variables
   CPXmipopt(cplex.env, cplex.lp);
-  CPXsolution(cplex.env, cplex.lp, NULL, &output.distance, x,
+  CPXsolution(cplex.env, cplex.lp, NULL, &solution.distance, x,
               NULL, NULL, NULL);
-  output.cplex_time = timer_end(cplex_start);
+  solution.cplex_time = timer_end(cplex_start);
   
   struct timespec *code_start = timer_start();
   // collect all active solution variables
@@ -195,20 +195,20 @@ PassOutput cplex_pass(TSP tsp, PassOutput prev, CPLEX cplex) {
   
   Subtour *subtour;
   while (subtour = next_subtour(tsp, vars)) {
-    insert_subtour(subtour, output.subtours, &(output.n));
+    insert_subtour(subtour, solution.subtours, &(solution.n));
   }
   
-  output.work_time = timer_end(code_start);
+  solution.work_time = timer_end(code_start);
   cycle_free(prev);
   
-  return output;
+  return solution;
 }
 
-void cplex_constrain(PassOutput output, CPLEX cplex) {
-  if (output.n == 0) return;
+void cplex_constrain(Solution solution, CPLEX cplex) {
+  if (solution.n == 0) return;
   
-  for (int i = 0, half = output.n / 2; i < half; i++) {
-    Subtour *subtour = output.subtours[i];
+  for (int i = 0, half = solution.n / 2; i < half; i++) {
+    Subtour *subtour = solution.subtours[i];
     
     double rhs[1] = {subtour->n - 1};
     char senses[1] = {'L'};
@@ -220,7 +220,7 @@ void cplex_constrain(PassOutput output, CPLEX cplex) {
     }
     
     char str[16];
-    sprintf(str, "pass(%d)", output.i);
+    sprintf(str, "pass(%d)", solution.i);
     char *contraints[1] = {strdup(str)};
     
     CPXaddrows(cplex.env, cplex.lp, 0, 1, subtour->n, rhs, senses,
@@ -229,10 +229,10 @@ void cplex_constrain(PassOutput output, CPLEX cplex) {
 }
 
 // Free memory used by a solve cycle
-void cycle_free(PassOutput output) {
-  for (int i = 0; i < output.n; i++) {
-    free(output.subtours[i]->tour);
+void cycle_free(Solution solution) {
+  for (int i = 0; i < solution.n; i++) {
+    free(solution.subtours[i]->tour);
   }
   
-  free(output.subtours);
+  free(solution.subtours);
 }

@@ -9,26 +9,26 @@ int main() {
   
   TSP tsp = tsp_init("./data/ire100.tsp");
   CPLEX cplex = cplex_start();
-  PassOutput output = cplex_init(tsp, cplex);
+  Solution solution = cplex_init(tsp, cplex);
   
   int presolve = timer_end(start);
   printf("Presolve time: %dms\n\n", presolve);
   printf("No.   Distance   Subtours   Time\n");
   
-  while (output.n != 1) {
-    cplex_constrain(output, cplex);
-    output = cplex_pass(tsp, output, cplex);
+  while (solution.n != 1) {
+    cplex_constrain(solution, cplex);
+    solution = cplex_pass(tsp, solution, cplex);
     
     printf("%3d   %-8.2f   %-8d   %dms\n",
-           output.i, output.distance, output.n, output.cplex_time);
+           solution.i, solution.distance, solution.n, solution.cplex_time);
   }
   
-  tsp_cplex_end(tsp, cplex, output);
+  tsp_cplex_end(tsp, cplex, solution);
   
   int total = timer_end(start);
   free(start);
   
-  printf("\nSolved! Best Route: %.2f\n", output.distance);
+  printf("\nSolved! Best Route: %.2f\n", solution.distance);
   printf("Solve Time: %dms\n\n", total - presolve);
   printf("Total Time: %dms\n\n", total);
   
