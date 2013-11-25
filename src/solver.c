@@ -169,7 +169,7 @@ Solution cplex_init(TSP tsp, CPLEX cplex) {
 
 Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
   double distance;
-  double *x = malloc(tsp.cols * sizeof(double)); // solution vars
+  double *x = malloc(tsp.cols * sizeof(double));
   
   Solution solution;
   solution.i = prev.i + 1;
@@ -177,8 +177,7 @@ Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
   solution.subtours = malloc(sizeof(Subtour *) * (tsp.n / 3));
   
   struct timespec *cplex_start = timer_start();
-  // solve the next cycle and get the solution variables
-  CPXmipopt(cplex.env, cplex.lp);
+  CPXmipopt(cplex.env, cplex.lp); // solve the next cycle
   CPXsolution(cplex.env, cplex.lp, NULL, &solution.distance, x,
               NULL, NULL, NULL);
   solution.cplex_time = timer_end(cplex_start);
@@ -190,7 +189,7 @@ Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
   for (int i = 0; i < tsp.cols; ++i) {
     if (x[i] == 0) continue;
     vars[count++] = i;
-    if (count == tsp.n) break;
+    if (count == tsp.n) break; // all active solution vars found
   }
   
   Subtour *subtour;
