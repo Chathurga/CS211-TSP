@@ -43,3 +43,6 @@ If we wanted to minimize the result of that equation then all we'd have to do it
 This is why we need constraints to make the solver turn certain journeys on.
 
 The first constraint is that if you take the number of towns in a problem as N then the number of journeys turned on must be N.
+
+
+** Writeup Still in Progress
