@@ -7,15 +7,15 @@ The [Travelling Salesman Problem](http://en.wikipedia.org/wiki/Travelling_salesm
 
 A quick reference of some terminology I'll use:
 *   **Distance matrix**: A data structure that contains the distance between any 2 towns. Every method of solving the TSP will obviously require this.
-*   **Journey**: Going from town A sraight to town B.
+*   **Journey**: Going from town A straight to town B.
 
 If a certain method of solving the TSP always gives you the best answer we'll call that a guaranteed optimal solution. The method I detail here will generate the guaranteed optimal solution if it produces a final answer. For certain instances of the problem it will fail to end in a reasonable amount of time either due to there being too many points or the layout of the points makes it hard to solve.
 
-Most methods produce an approximation, it might be the best answer but you have no guarantee (and often it isn't the optimal solution). When set the TSP as a class challenge most people will use an approximation technique. Usually the technique will initially be: start at a point, go to the nearest neighbour that hasn't been used yet, repeat. That gives an answer, almost certainly not the best but it is a valid solution. You can improve this method by doing various refinements like:
+Most methods produce an approximation, it might be the best answer but you have no guarantee (and often it isn't the optimal solution). When set the TSP as a class challenge most people will use an approximation technique. Usually the technique will initially be: start at a point, go to the nearest neighbor that hasn't been used yet, repeat. That gives an answer, almost certainly not the best but it is a valid solution. You can improve this method by doing various refinements like:
 
-*   Starting at every point do the nearest neighbour approach and return the route that gave the best answer
-*   Jitter every value in the distance matrix with random offsets. This can make the nearest neighbour approach choose a route that it otherwise wouldn't but is actually closer to the optimal solution. You can tune the jitter range to get better results.
-*   The telltale sign of a non-optimal solution is *crossovers* where the journeys between 2 pairs of towns intersect. Uncrossing these journies will yield a better solution.
+*   Starting at every point do the nearest neighbor approach and return the route that gave the best answer
+*   Jitter every value in the distance matrix with random offsets. This can make the nearest neighbor approach choose a route that it otherwise wouldn't but is actually closer to the optimal solution. You can tune the jitter range to get better results.
+*   The telltale sign of a non-optimal solution is *crossovers* where the journeys between 2 pairs of towns intersect. Uncrossing these journeys will yield a better solution.
 
 Some of the approximation techniques are quick clever (like the [Ant colony method](http://en.wikipedia.org/wiki/Travelling_salesman_problem#Ant_colony_optimization)) but it's always nicer to completely solve something so let's do that.
 
@@ -77,7 +77,7 @@ How many solution variables should the solver output? Well there should be exact
     
     Binary Vars: ...
 
-We'll definitely get N distinct journeys outputted but there's no guarantee we'll get cyclical routes. The solver will just choose the N shortest journeys with no regard for the "enter and leave every town once" rule. It might use x(1,2), x(1,3) and x(1,4) because the corresponding dist(i,j) variables where smaller than other distances even though it should be illegal to use town 1 more than twice. We can phrase this rule as a contraint:
+We'll definitely get N distinct journeys outputted but there's no guarantee we'll get cyclical routes. The solver will just choose the N shortest journeys with no regard for the "enter and leave every town once" rule. It might use x(1,2), x(1,3) and x(1,4) because the corresponding dist(i,j) variables where smaller than other distances even though it should be illegal to use town 1 more than twice. We can phrase this rule as a constraint:
 
     Minimize: ...
     
@@ -92,10 +92,16 @@ We'll definitely get N distinct journeys outputted but there's no guarantee we'l
 
 Since each town has to be entered and left once this forces cyclic routes to form, there's no way to get invalid routes. The problem now is that several complete *subtours* can form. The solution might not be one total tour containing all towns but several distinct tours involving a subset of the towns. This is because having several subtours will almost certainly give a total shorter distance travelled, it would be very, very rare that 1 tour would be the first solution found. There is no easy way to word the "1 tour only" rule as a constraint upfront.
 
-Up until now all the user program was doing was wording the problem for the linear equation solver to solve. You could write the input file by hand even (for small problems). Now programming comes back into it as we'll have to dynamically add contraints to get the final answer. What these constraints will do is tell the solver that certain subtours are illegal and to not allow it to form specific subtours when generating a solution. We keep generating solutions and eliminating subtours until a solution is formed that contains only 1 tour. This would be our final answer.
+Up until now all the user program was doing was wording the problem for the linear equation solver to solve. You could write the input file by hand even (for small problems). Now programming comes back into it as we'll have to dynamically add constraints to get the final answer. What these constraints will do is tell the solver that certain subtours are illegal and to not allow it to form specific subtours when generating a solution. We keep generating solutions and eliminating subtours until a solution is formed that contains only 1 tour. This would be our final answer.
 
-After the solver does a pass we must detect and collect the subtours. I won't detail how to that yet but the writeup may be expanded later to include an explanation. Now we explicitly eliminate a certain amount of subtours (in this project, I eliminate the smallest half). The generally form of the elimination constraint is:
+After the solver does a pass we must detect and collect the subtours. I won't detail how to that yet but the writeup may be expanded later to include an explanation. Then we explicitly eliminate a certain amount of subtours (in this project I eliminate the smallest half). There's no point in eliminating all subtours found, if you had 2 subtours and you eliminate the first then it implicitly eliminates the second anyway. The general form of the elimination constraint is:
 
     sum (for (i,j) in tour; x(i,j)) <= length(tour) - 1
 
-Let's say we detect a subtour with 3 points: x(3,7), x(7,18), x(3,18) which is the route 3 -> 7 -> 18 -> 3. TODO
+Let's say we detect a subtour with 3 points: x(3,7), x(7,18), x(3,18) (which is the route 3 -> 7 -> 18 -> 3). The constraint we would set is:
+
+   x(3,7) + x(7,18) + x(3,18) <= 2
+
+This stops all 3 journeys being active at the same time and thus eliminates the subtour. Rinse and repeat.
+
+That's all for now. Later I'll add notes about the implementation and how to compile the project.
