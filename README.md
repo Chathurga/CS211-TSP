@@ -15,13 +15,13 @@ Most methods produce an approximation, it might be the best answer but you have 
 
 *   Starting at every point do the nearest neighbour approach and return the route that gave the best answer
 *   Jitter every value in the distance matrix with random offsets. This can make the nearest neighbour approach choose a route that it otherwise wouldn't but is actually closer to the optimal solution. You can tune the jitter range to get better results.
-*   The telltale sign of a non-optimal solution is **crossovers** where the journeys between 2 pairs of towns intersect. Uncrossing these journies will yield a better solution.
+*   The telltale sign of a non-optimal solution is *crossovers* where the journeys between 2 pairs of towns intersect. Uncrossing these journies will yield a better solution.
 
-Some of the approximation techniques are quick clever (like the [Ant colony method](http://en.wikipedia.org/wiki/Travelling_salesman_problem#Ant_colony_optimization) but it's always nicer to completely solve something so let's do that.
+Some of the approximation techniques are quick clever (like the [Ant colony method](http://en.wikipedia.org/wiki/Travelling_salesman_problem#Ant_colony_optimization)) but it's always nicer to completely solve something so let's do that.
 
 # Linear Programming Technique
 
-This method of solving the TSP works by phrasing the TSP as a linear equation then getting the minimal solution to that equation under a set of constraints.  
+This method of solving the TSP works by phrasing the TSP as a linear equation then getting the minimal solution to that equation under a set of constraints.
 
 This is an example of a minimization problem (x(1) and x(2) are just variable names):  
     
@@ -32,40 +32,62 @@ This is an example of a minimization problem (x(1) and x(2) are just variable na
     x(1) >= 2
     x(2) >= 4
 
-Here we want to get the smallest solution to "2 x(1) + 6 x(2)" under the constraints that x(1) is at least 2 and x(2) is at least 4.  
+Here we want to get the smallest solution to "2 x(1) + 6 x(2)" under the constraints that x(1) is at least 2 and x(2) is at least 4.
 
-If we ran that through a solver it would find that this equation is minimal simply when x(1) is 2 and x(2) is 4. The output we would read is what values the solver set for x(1) and x(2). We'll call x(1) and x(2) the solution variables.   
+If we ran that through a solver it would find that this equation is minimal simply when x(1) is 2 and x(2) is 4. The output we would read is what values the solver set for x(1) and x(2). We'll call x(1) and x(2) the solution variables.
 
-Now for the real problem. Given a list of towns the first thing we do is generate the distance between every pair of towns. Since the distance between town 1 to 2 is the same as town 2 to 1 we won't include duplicates.  
+**Note**: The equation solver will be an external program that you feed input to and read output from. There are many available e.g. lp_solve (free), GLPK (free), IBM's CPLEX (proprietary) and many others. The completionist in you might want to create one from scratch and that's certainly a great exercise but I didn't feel the need here because I lacked the motivation to undertake such a large side project and CPLEX (the solver I used for this project) is just so incredibly fast.
 
-    dist(1,2) = 46
-    dist(1,3) = 23
+Now for the real problem. We'll represent the distance matrix with many dist(i,j) variables where dist(i,j) represents the distance between town i and j. Since the distance between town i and j is the same as the distance between town j and i we won't include duplicates. So we'd have many variables like so (or some data structure that encapsulated these):
+
+    dist(1,2)   = 46
+    dist(1,3)   = 23
     ...
-    dist(1,80) = 125
-    dist(2,3) = 33
+    dist(1,N)   = 125
+    dist(2,3)   = 33
     ...
-    dist(79,80) = 12
+    dist(N-1,N) = 12
 
-Where dist(i,j) represents the distance between town i and j.  
-
-Now we'll define the solutions variables for our problem. These will mark whether a particular journey between towns was taken. Each of these solution variables can be either 0 or 1 where 0 = "wasn't taken" and 1 = "taken".
+Now we'll define the solutions variables for our problem. These will mark whether a particular journey between towns was taken. We'll force these variables to be binary so they can be either 0 or 1 where 0 = *wasn't taken* and 1 = *taken*.
 
 With these binary variables and distance calculations we can formulate the TSP like so:
 
     Minimize:
     dist(1,2) * x(1,2) + dist(1,3) * x(1,3) + ...
+    
+    Binary Vars:
+    for i in (1:N): for j in (1:N): x(i,j)
 
-Where x(i,j) indicates whether the journey between i and j was taken.
+Where x(i,j) indicates whether the journey between town i and j was taken. The syntax I'm using here is made up but it resembles the syntax used in the various problem formats read by different solvers.
 
-If a journey is set to 1 then its distance gets added to the equation, if the journey is set to 0 then the distance gets canceled out. We'll make the solver flip certain journeys on or off with the goal of minimizing the total distance used.
+If a journey is set to 1 then its distance gets added to the equation, if the journey is set to 0 then the distance gets cancelled out. We'll make the solver flip certain journeys on or off with the goal of minimizing the total distance used.
 
-If we wanted to minimize the result of that equation then all we'd have to do it set every x(i,j) to zero.
+If a solver wanted to minimize the result of that equation then all it'd have to do is set every x(i,j) to zero.
 
     dist(1,2) * 0 + dist(1,3) * 0 + ... = 0
 
-This is why we need constraints to make the solver turn certain journeys on.
+Now we need constraints to make the solver turn certain journeys on.
 
-The first constraint is that if you take the number of towns in a problem as N then the number of journeys turned on must be N.
+How many solution variables should the solver output? Well there should be exactly N journeys so our first constraint will force this condition.
+
+    Minimize: ...
+    
+    Where:
+    x(1,2) + x(1,3) + ... + x(N-1,N) = N
+    
+    Binary Vars: ...
+
+We'll definitely get N distinct journeys outputted but there's no guarantee we'll get cyclical routes. The solver will just choose the N shortest journeys with no regard for the "enter and leave every town once" rule. It might use x(1,2), x(1,3) and x(1,4) because the corresponding dist(i,j) variables where smaller than other distances even though it should be illegal to use town 1 more than twice. We can phrase this rule as a contraint:
+
+    Minimize: ...
+    
+    Where: ...
+    x(1,2) + x(1,3) + x(1,4) + ... + x(1,N) = 2
+    x(1,2) + x(2,3) + x(2,4) + ... + x(2,N) = 2
+    x(1,3) + x(2,3) + x(3,4) + ... + x(3,N) = 2
+    ...
+    x(1,N) + x(2,N) + x(3,N) + ... + x(N-1,N) = 2
+    
+    Binary Vars: ...
 
 
-** Writeup Still in Progress
