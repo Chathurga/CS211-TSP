@@ -9,9 +9,16 @@ char *choose_file(char *dir_path) {
 }
 
 int main() {
-  struct timespec *start = timer_start();
+  // Ask the user for the TSP problem file name
+  char line[255];
+  char path[255] = "./data/";
+  printf("Enter name of TSP file:\n");
+  scanf("%s", line);
+  strcat(path, line);
+  printf("\n");
   
-  TSP tsp = tsp_init("./data/ire100.tsp");
+  struct timespec *start = timer_start();
+  TSP tsp = tsp_init(path);
   CPLEX cplex = cplex_start();
   Solution solution = cplex_init(tsp, cplex);
   

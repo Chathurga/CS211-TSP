@@ -24,6 +24,12 @@ char *strdup(const char *str) {
 
 struct Town *tsp_open(char *path, int *n) {
   FILE* file = fopen(path, "r");
+  
+  if (file == NULL) {
+    printf("Could not open TSP file\n");
+    exit(1);
+  }
+  
   struct Town* towns = NULL;
   int offset = 0;
   int line_size = 100;
@@ -183,6 +189,7 @@ Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
   solution.cplex_time = timer_end(cplex_start);
   
   struct timespec *code_start = timer_start();
+  
   // collect all active solution variables
   int count = 0;
   int *vars = malloc(sizeof(int) * tsp.n);
@@ -198,7 +205,7 @@ Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
   }
   
   solution.work_time = timer_end(code_start);
-  cycle_free(prev);
+  //cycle_free(prev);
   
   return solution;
 }
