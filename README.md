@@ -1,6 +1,6 @@
 # Introduction
 
-The [Travelling Salesman Problem](http://en.wikipedia.org/wiki/Travelling_salesman_problem) (TSP) is a [NP-hard](http://www.quora.com/What-are-P-NP-NP-complete-and-NP-hard) where you have N towns (or points) and you have to find he shortest route between all towns given that:
+The [Travelling Salesman Problem](http://en.wikipedia.org/wiki/Travelling_salesman_problem) (TSP) is an [NP-hard](http://www.quora.com/What-are-P-NP-NP-complete-and-NP-hard) problem where you have N towns (or points) and you have to find he shortest route between all towns given that:
 
 *   You have to enter and leave every town once
 *   You have to form a complete route, the "last" town must link back to the "first" town
