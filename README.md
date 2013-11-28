@@ -90,4 +90,8 @@ We'll definitely get N distinct journeys outputted but there's no guarantee we'l
     
     Binary Vars: ...
 
+Since each town has to be entered and left once this forces cyclic routes to form, there's no way to get invalid routes. The problem now is that several complete *subtours* can form. The solution might not be one total tour containing all towns but several distinct tours involving a subset of the towns. This is because having several subtours will almost certainly give a total shorter distance travelled, it would be very, very rare that 1 tour would be the first solution found. There is no easy way to word the "1 tour only" rule as a constraint upfront.
 
+Up until now all the user program was doing was wording the problem for the linear equation solver to solve. You could write the input file by hand even (for small problems). Now programming comes back into it as we'll have to dynamically add contraints to get the final answer. What these constraints will do is tell the solver that certain subtours are illegal and disallow it from forming specific subtours when generating a solution. We keep generating solutions and eliminating subtours until a solution is formed that contains only 1 tour. This would be our final answer.
+
+After the solver does a pass... TODO
