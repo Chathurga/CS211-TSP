@@ -92,6 +92,10 @@ We'll definitely get N distinct journeys outputted but there's no guarantee we'l
 
 Since each town has to be entered and left once this forces cyclic routes to form, there's no way to get invalid routes. The problem now is that several complete *subtours* can form. The solution might not be one total tour containing all towns but several distinct tours involving a subset of the towns. This is because having several subtours will almost certainly give a total shorter distance travelled, it would be very, very rare that 1 tour would be the first solution found. There is no easy way to word the "1 tour only" rule as a constraint upfront.
 
-Up until now all the user program was doing was wording the problem for the linear equation solver to solve. You could write the input file by hand even (for small problems). Now programming comes back into it as we'll have to dynamically add contraints to get the final answer. What these constraints will do is tell the solver that certain subtours are illegal and disallow it from forming specific subtours when generating a solution. We keep generating solutions and eliminating subtours until a solution is formed that contains only 1 tour. This would be our final answer.
+Up until now all the user program was doing was wording the problem for the linear equation solver to solve. You could write the input file by hand even (for small problems). Now programming comes back into it as we'll have to dynamically add contraints to get the final answer. What these constraints will do is tell the solver that certain subtours are illegal and to not allow it to form specific subtours when generating a solution. We keep generating solutions and eliminating subtours until a solution is formed that contains only 1 tour. This would be our final answer.
 
-After the solver does a pass... TODO
+After the solver does a pass we must detect and collect the subtours. I won't detail how to that yet but the writeup may be expanded later to include an explanation. Now we explicitly eliminate a certain amount of subtours (in this project, I eliminate the smallest half). The generally form of the elimination constraint is:
+
+    sum (for (i,j) in tour; x(i,j)) <= length(tour) - 1
+
+Let's say we detect a subtour with 3 points: x(3,7), x(7,18), x(3,18) which is the route 3 -> 7 -> 18 -> 3. TODO
