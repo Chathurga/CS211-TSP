@@ -9,9 +9,9 @@ A quick reference of some terminology I'll use:
 *   **Distance matrix**: A data structure that contains the distance between any 2 towns. Every method of solving the TSP will obviously require this.
 *   **Journey**: Going from town A straight to town B.
 
-If a certain method of solving the TSP always gives you the best answer we'll call that a guaranteed optimal solution. The method I detail here will generate the guaranteed optimal solution if it produces a final answer. For certain instances of the problem it will fail to end in a reasonable amount of time either due to there being too many points or the layout of the points makes it hard to solve.
+If a certain method of solving the TSP always gives you the best answer we'll call that a guaranteed optimal solution. The method I detail here will generate the guaranteed optimal solution if it produces a final answer as it might not terminate in a reasonable time. For certain instances of the problem it will fail to end in a reasonable amount of time either due to there being too many points or the layout of the points makes it hard to solve.
 
-Most methods produce an approximation, it might be the best answer but you have no guarantee (and often it isn't the optimal solution). When set the TSP as a class challenge most people will use an approximation technique. Usually the technique will initially be: start at a point, go to the nearest neighbor that hasn't been used yet, repeat. That gives an answer, almost certainly not the best but it is a valid solution. You can improve this method by doing various refinements like:
+Most methods produce an approximation, it might be the best answer but you have no guarantee (and often it isn't the optimal solution). When set the TSP as a class challenge most people will use an approximation technique. Usually the technique will initially be: start at a point, go to the nearest neighbor that hasn't been used yet, repeat. That gives an answer, it is almost certainly not the best answer but it's still a valid solution. You can improve this method by doing various refinements like:
 
 *   Starting at every point do the nearest neighbor approach and return the route that gave the best answer
 *   Jitter every value in the distance matrix with random offsets. This can make the nearest neighbor approach choose a route that it otherwise wouldn't but is actually closer to the optimal solution. You can tune the jitter range to get better results.
@@ -68,7 +68,7 @@ If a solver wanted to minimize the result of that equation then all it'd have to
 
 Now we need constraints to make the solver turn certain journeys on.
 
-How many solution variables should the solver output? Well there should be exactly N journeys so our first constraint will force this condition.
+How many solution variables should the solver turn on? Well there should be exactly N journeys so our first constraint will force this condition.
 
     Minimize: ...
     
@@ -104,4 +104,4 @@ Let's say we detect a subtour with 3 points: x(3,7), x(7,18), x(3,18) (which is 
 
 This stops all 3 journeys being active at the same time and thus eliminates the subtour. Rinse and repeat.
 
-That's all for now. Later I'll add notes about the implementation and how to compile the project.
+That's all for now!
