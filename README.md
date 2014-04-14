@@ -100,7 +100,7 @@ After the solver does a pass we must detect and collect the subtours. I won't de
 
 Let's say we detect a subtour with 3 points: x(3,7), x(7,18), x(3,18) (which is the route 3 -> 7 -> 18 -> 3). The constraint we would set is:
 
-   x(3,7) + x(7,18) + x(3,18) <= 2
+    x(3,7) + x(7,18) + x(3,18) <= 2
 
 This stops all 3 journeys being active at the same time and thus eliminates the subtour. Rinse and repeat.
 
