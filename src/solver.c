@@ -22,7 +22,7 @@ char *strdup(const char *str) {
   return dup;
 }
 
-struct Town *tsp_open(char *path, int *n) {
+Town *tsp_open(char *path, int *n) {
   FILE* file = fopen(path, "r");
   
   if (file == NULL) {
@@ -30,7 +30,7 @@ struct Town *tsp_open(char *path, int *n) {
     exit(1);
   }
   
-  struct Town* towns = NULL;
+  Town* towns = NULL;
   int offset = 0;
   int line_size = 100;
   char line[line_size];
@@ -44,7 +44,7 @@ struct Town *tsp_open(char *path, int *n) {
     
     if (x == NULL || y == NULL) continue; // line doesn't contain a point
     
-    struct Town town = { atoi(num), atof(x), atof(y) };
+    Town town = { atoi(num), atof(x), atof(y) };
     
     (*n)++;
     if ((*n) - 1 % 100 == 0) { // allocate memory every 100 lines
@@ -63,7 +63,7 @@ struct Town *tsp_open(char *path, int *n) {
 TSP tsp_init(char *name) {
   // Load the TSP file
   int n = 0; // no. of towns
-  struct Town *towns = tsp_open(name, &n);
+  Town *towns = tsp_open(name, &n);
   
   // The number of unique pairs of towns
   int cols = POS(n-2, n-1, n) - 1;

@@ -1,10 +1,10 @@
 #ifndef SOLVER_HEADER
 #define SOLVER_HEADER
 
-struct Town {
+typedef struct {
   int num;
   float x, y;
-};
+} Town;
 
 typedef struct {
   int n;       // number of towns
