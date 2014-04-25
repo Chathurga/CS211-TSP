@@ -1,7 +1,6 @@
 #include <ilcplex/cplex.h>
 
 #include "timer.c"
-#include "tour.c"
 #include "solver.c"
 
 char *choose_file(char *dir_path) {
