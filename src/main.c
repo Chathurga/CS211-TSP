@@ -3,21 +3,14 @@
 #include "timer.c"
 #include "solver.c"
 
-char *choose_file(char *dir_path) {
-  
-}
-
-int main() {
-  // Ask the user for the TSP problem file name
-  char line[255];
-  char path[255] = "./data/";
-  printf("Enter name of TSP file:\n");
-  scanf("%s", line);
-  strcat(path, line);
-  printf("\n");
+int main (int argc, char *argv[]) {
+  if (argc != 2) {
+    printf("Incorrect number of arguments\n");
+    exit(1);
+  }
   
   struct timespec start = timer_start();
-  TSP tsp = tsp_init(path);
+  TSP tsp = tsp_init(argv[1]);
   CPLEX cplex = cplex_start();
   Solution solution = cplex_init(tsp, cplex);
   
