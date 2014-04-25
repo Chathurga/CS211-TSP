@@ -182,13 +182,13 @@ Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
   solution.n = 0;
   solution.subtours = malloc(sizeof(Subtour *) * (tsp.n / 3));
   
-  struct timespec *cplex_start = timer_start();
+  struct timespec cplex_start = timer_start();
   CPXmipopt(cplex.env, cplex.lp); // solve the next cycle
   CPXsolution(cplex.env, cplex.lp, NULL, &solution.distance, x,
               NULL, NULL, NULL);
   solution.cplex_time = timer_end(cplex_start);
   
-  struct timespec *code_start = timer_start();
+  struct timespec code_start = timer_start();
   
   // collect all active solution variables
   int count = 0;

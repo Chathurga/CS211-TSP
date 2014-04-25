@@ -17,7 +17,7 @@ int main() {
   strcat(path, line);
   printf("\n");
   
-  struct timespec *start = timer_start();
+  struct timespec start = timer_start();
   TSP tsp = tsp_init(path);
   CPLEX cplex = cplex_start();
   Solution solution = cplex_init(tsp, cplex);
@@ -37,7 +37,6 @@ int main() {
   tsp_cplex_end(tsp, cplex, solution);
   
   int total = timer_end(start);
-  free(start);
   
   printf("\nSolved! Best Route: %.2f\n", solution.distance);
   printf("Solve Time: %dms\n\n", total - presolve);
