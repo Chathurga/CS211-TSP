@@ -6,7 +6,8 @@
 
 #define M_PI 3.14159265358979323846
 
-static const double R = 6371; // radius of the Earth
+// Radius of the Earth
+static const double R = 6371;
 
 double radians(double val) {
   return val * (M_PI / 180.0);

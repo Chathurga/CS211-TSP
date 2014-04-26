@@ -25,7 +25,7 @@ int get_pair_pos(int i, int j, int n) {
 }
 
 Town *tsp_open(char *path, int *n) {
-  FILE* file = fopen(path, "r");
+  FILE *file = fopen(path, "r");
   
   if (file == NULL) {
     printf("Could not open TSP file\n");
@@ -205,6 +205,7 @@ Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
     insert_subtour(subtour, solution.subtours, &(solution.n));
   }
   
+  free(vars);
   solution.work_time = timer_end(code_start);
   //cycle_free(prev);
   
@@ -261,7 +262,7 @@ int pairs_adj(Pair a, Pair b) {
          a.j.num == b.i.num || a.j.num == b.j.num;
 }
 
-Subtour * next_subtour(TSP tsp, int *vars) {
+Subtour *next_subtour(TSP tsp, int *vars) {
   // find the next subtour 'starting' point
   int start = -1;
   for (int i = 0; i < tsp.n; ++i) {
@@ -293,10 +294,12 @@ Subtour * next_subtour(TSP tsp, int *vars) {
       
       if (!(fst_adj || snd_adj)) continue;
       
+      // New town is after the current last so just put it at the end
       if (snd_adj) {
         subtour->tour[subtour->n] = vars[i];
         snd = cur;
       }
+      // Otherwise move all points up and insert the new town at the start
       else {
         for (int j = subtour->n + 1; j > 0; --j) {
           subtour->tour[j] = subtour->tour[j-1];

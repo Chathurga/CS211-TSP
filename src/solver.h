@@ -1,44 +1,49 @@
 #ifndef SOLVER_HEADER
 #define SOLVER_HEADER
 
+// A town node
 typedef struct {
-  int id, num;
-  float x, y;
+  int id;     // The town number from 0
+  int num;    // Whatever the town was numbered in the file
+  float x, y; // x,y co-ords
 } Town;
 
+// Simple tuple that represents a pairing of towns
+// A pairing means a journey from i to j or j to i
 typedef struct {
   Town i, j;
 } Pair;
 
+// Info about the current TSP problem
 typedef struct {
-  int n;       // number of towns
-  int cols;    // number of columns
-  double *distances;
-  Pair *pairs; // each potential pairing of towns
+  int n;             // Number of towns
+  int cols;          // Number of unique pairing of towns
+  double *distances; // Distance between each pair of towns
+  Pair *pairs;       // List of the pairs of towns
 } TSP;
 
-// Contains all relevant variables for a CPLEX instance
+// CPLEX instance vars
 typedef struct {
   CPXENVptr env; // CPLEX environment
-  CPXLPptr lp;   // problem pointer
+  CPXLPptr lp;   // Problem pointer
   int *status;
 } CPLEX;
 
-// Contains the length of a subtour and a list of towns
+// Subtour wrapper
 typedef struct {
-  int n;
-  int *tour;
+  int n;     // Number of towns in subtour
+  int *tour; // List of towns visited
 } Subtour;
 
-// Various information recorded about a TSP solve cycle
+// Various info recorded about a TSP solve cycle
 typedef struct {
-  int i;              // pass number
-  double distance;    // total distance of subtours
-  int work_time;      // how long the non-cplex code took
-  int cplex_time;     // how long the cplex code took
+  int i;              // Pass number
+  double distance;    // Total distance of subtours
+  int work_time;      // How long the non-cplex code took
+  int cplex_time;     // How long the cplex code took
   
-  int n;              // the number of subtours generated
-  Subtour **subtours; // list of subtours sorted by length
+  int n;              // The number of subtours generated
+  Subtour **subtours; // List of subtours sorted by length
 } Solution;
 
 CPLEX cplex_start();
