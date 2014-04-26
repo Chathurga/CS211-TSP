@@ -2,15 +2,19 @@
 #define SOLVER_HEADER
 
 typedef struct {
-  int num;
+  int id, num;
   float x, y;
 } Town;
+
+typedef struct {
+  Town i, j;
+} Pair;
 
 typedef struct {
   int n;       // number of towns
   int cols;    // number of columns
   double *distances;
-  int *points; // array of vertex numbers
+  Pair *pairs; // each potential pairing of towns
 } TSP;
 
 // Contains all relevant variables for a CPLEX instance
@@ -50,18 +54,5 @@ int shortest(const void *, const void *);
 Subtour *next_subtour(TSP tsp, int *vars);
 
 void insert_subtour(Subtour *, Subtour **, int *);
-
-// fetches the numbers of the two points involved in an edge
-// iden: the base variable name, the nums will be put in iden1 and iden2
-// ps:   the points array
-// i:    index position of the first num, is followed by the second
-#define get_points(iden, ps, i) iden ## 1 = (ps)[i*2] + 1;\
-                                iden ## 2 = (ps)[i*2+1] + 1;
-                               
-// checks if any of the point numbers match in 2 pairs
-#define match_points(idenA, idenB) idenA ## 1 == idenB ## 1 ||\
-                                   idenA ## 1 == idenB ## 2 ||\
-                                   idenA ## 2 == idenB ## 1 ||\
-                                   idenA ## 2 == idenB ## 2
 
 #endif

@@ -13,13 +13,15 @@
 #include "solver.h"
 #include "distance.c"
 
-#define POS(i, j, n) (((i+1) * n) - ((i+1) * (i+2) >> 1) - (n - j))
-
 char *strdup(const char *str) {
   int n = strlen(str) + 1;
   char *dup = malloc(n);
   strcpy(dup, str);
   return dup;
+}
+
+int get_pair_pos(int i, int j, int n) {
+  return ((i+1) * n) - ((i+1) * (i+2) / 2) - (n - j);
 }
 
 Town *tsp_open(char *path, int *n) {
@@ -44,7 +46,7 @@ Town *tsp_open(char *path, int *n) {
     
     if (x == NULL || y == NULL) continue; // line doesn't contain a point
     
-    Town town = { atoi(num), atof(x), atof(y) };
+    Town town = { *n, atoi(num), atof(x), atof(y) };
     
     (*n)++;
     if ((*n) - 1 % 100 == 0) { // allocate memory every 100 lines
@@ -66,9 +68,9 @@ TSP tsp_init(char *name) {
   Town *towns = tsp_open(name, &n);
   
   // The number of unique pairs of towns
-  int cols = POS(n-2, n-1, n) - 1;
+  int cols = (n * (n - 1)) / 2;
   
-  int *points = malloc(sizeof(int) * cols * 2);
+  Pair *pairs = malloc(sizeof(Pair) * cols);
   double *dists = malloc(sizeof(double) * cols);
   
   for (int i = 0; i < n; ++i) {
@@ -76,15 +78,15 @@ TSP tsp_init(char *name) {
     
     for (int j = i + 1; j < n; ++j) {
       if (i == j) continue;
-      int pos = POS(i, j, n);
+      int pos = get_pair_pos(i, j, n);
       
       dists[pos] = hsine(towns[i].y, towns[i].x, towns[j].y, towns[j].x);
-      points[pos * 2] = i;
-      points[pos * 2 + 1] = j;
+      Pair pair = { towns[i], towns[j] };
+      pairs[pos] = pair;
     }
   }
   
-  TSP tsp = {n, cols, dists, points};
+  TSP tsp = {n, cols, dists, pairs};
   
   return tsp;
 }
@@ -93,7 +95,7 @@ void tsp_cplex_end(TSP tsp, CPLEX cplex, Solution solution) {
   // Close CPLEX and free all memory associated with it
   CPXcloseCPLEX(&cplex.env);
   free(tsp.distances);
-  free(tsp.points);
+  free(tsp.pairs);
   cycle_free(solution);
 }
 
@@ -146,15 +148,14 @@ Solution cplex_init(TSP tsp, CPLEX cplex) {
   }
   
   for (int pos = 0; pos < cols; ++pos) {
-    int i = tsp.points[pos*2];
-    int j = tsp.points[pos*2 + 1];
+    Pair pair = tsp.pairs[pos];
     
-    int first  = (i * (n-1)) + (j-1);
-    int second = (j * (n-1)) + i;
+    int first  = (pair.i.id * (n-1)) + (pair.j.id-1);
+    int second = (pair.j.id * (n-1)) + pair.i.id;
     visits[first] = visits[second] = pos;
     rmatval[first] = rmatval[second] = 1;
     
-    sprintf(str, "x(%d,%d)", i+1, j+1);
+    sprintf(str, "x(%d,%d)", pair.i.num, pair.j.num);
     headers[pos] = strdup(str);
     
     lb[pos] = 0;
@@ -253,6 +254,13 @@ int shortest(const void *a, const void *b) {
   return 0;
 }
 
+// Checks if two pairs of towns are adjacent
+// This means that they are next to each other in a tour
+int pairs_adj(Pair a, Pair b) {
+  return a.i.num == b.i.num || a.i.num == b.j.num ||
+         a.j.num == b.i.num || a.j.num == b.j.num;
+}
+
 Subtour * next_subtour(TSP tsp, int *vars) {
   // find the next subtour 'starting' point
   int start = -1;
@@ -272,43 +280,37 @@ Subtour * next_subtour(TSP tsp, int *vars) {
   vars[start] = -1;
   
   while(1) {
-    int fst1, fst2, snd1, snd2;
-    get_points(fst, tsp.points, subtour->tour[0]);
-    get_points(snd, tsp.points, subtour->tour[subtour->n - 1]);
+    Pair fst = tsp.pairs[subtour->tour[0]];
+    Pair snd = tsp.pairs[subtour->tour[subtour->n - 1]];
     
     for (int i = start + 1; i < tsp.n; ++i) {
-      if (vars[i] == -1) continue;
+      if (vars[i] == -1) continue; // already used
       
-      int cur1, cur2;
-      get_points(cur, tsp.points, vars[i]);
+      Pair cur = tsp.pairs[vars[i]];
+      // Check if this town leads into the first town or follows the last
+      int fst_adj = pairs_adj(cur, fst);
+      int snd_adj = pairs_adj(cur, snd);
       
-      int m1 = match_points(cur, fst);
-      int m2 = match_points(cur, snd);
-      if (!(m1 || m2)) continue;
+      if (!(fst_adj || snd_adj)) continue;
       
-      // this follows on from the last point
-      if (m2) {
+      if (snd_adj) {
         subtour->tour[subtour->n] = vars[i];
-        snd1 = cur1; snd2 = cur2;
+        snd = cur;
       }
-      // before the first point
       else {
         for (int j = subtour->n + 1; j > 0; --j) {
           subtour->tour[j] = subtour->tour[j-1];
         }
         subtour->tour[0] = vars[i];
-        fst1 = cur1; fst2 = cur2;
+        fst = cur;
       }
       
       subtour->n++;
       vars[i] = -1;
     }
     
-    get_points(fst, tsp.points, subtour->tour[0]);
-    get_points(snd, tsp.points, subtour->tour[subtour->n - 1]);
-    
-    // subtour loop found
-    if (match_points(fst, snd)) break;
+    // First and last points are adjacent, subtour found
+    if (pairs_adj(fst, snd)) break;
   }
   
   return subtour;
