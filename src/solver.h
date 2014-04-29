@@ -11,6 +11,7 @@ typedef struct {
 // Simple tuple that represents a pairing of towns
 // A pairing means a journey from i to j or j to i
 typedef struct {
+  int id;
   Town i, j;
 } Pair;
 
@@ -32,7 +33,7 @@ typedef struct {
 // Subtour wrapper
 typedef struct {
   int n;     // Number of towns in subtour
-  int *tour; // List of towns visited
+  Pair *tour; // List of towns visited
 } Subtour;
 
 // Various info recorded about a TSP solve cycle
@@ -55,6 +56,8 @@ void cplex_constrain(Solution, CPLEX);
 void cycle_free(Solution);
 
 int shortest(const void *, const void *);
+
+int pair_pos(int, int, int);
 
 Subtour *next_subtour(TSP tsp, int *vars);
 

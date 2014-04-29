@@ -20,10 +20,6 @@ char *strdup(const char *str) {
   return dup;
 }
 
-int get_pair_pos(int i, int j, int n) {
-  return ((i+1) * n) - ((i+1) * (i+2) / 2) - (n - j);
-}
-
 Town *tsp_open(char *path, int *n) {
   FILE *file = fopen(path, "r");
   
@@ -78,10 +74,10 @@ TSP tsp_init(char *name) {
     
     for (int j = i + 1; j < n; ++j) {
       if (i == j) continue;
-      int pos = get_pair_pos(i, j, n);
+      int pos = pair_pos(i, j, n);
       
       dists[pos] = hsine(towns[i].y, towns[i].x, towns[j].y, towns[j].x);
-      Pair pair = { towns[i], towns[j] };
+      Pair pair = { pos, towns[i], towns[j] };
       pairs[pos] = pair;
     }
   }
@@ -231,8 +227,13 @@ void cplex_constrain(Solution solution, CPLEX cplex) {
     sprintf(str, "pass(%d)", solution.i);
     char *contraints[1] = {strdup(str)};
     
+    int *tour = malloc(sizeof(int) * subtour->n);
+    for (int i = 0; i < subtour->n; ++i) {
+      tour[i] = subtour->tour[i].id;
+    }
+    
     CPXaddrows(cplex.env, cplex.lp, 0, 1, subtour->n, rhs, senses,
-               rmatbeg, subtour->tour, rmatval, NULL, contraints);
+               rmatbeg, tour, rmatval, NULL, contraints);
   }
 }
 
@@ -255,65 +256,55 @@ int shortest(const void *a, const void *b) {
   return 0;
 }
 
+// Pairs are stored in a flat array which represents a triangular matrix
+// Get the real position of the (i, j) pair
+int pair_pos(int i, int j, int n) {
+  return ((i+1) * n) - ((i+1) * (i+2) / 2) - (n - j);
+}
+
 // Checks if two pairs of towns are adjacent
 // This means that they are next to each other in a tour
 int pairs_adj(Pair a, Pair b) {
-  return a.i.num == b.i.num || a.i.num == b.j.num ||
-         a.j.num == b.i.num || a.j.num == b.j.num;
+  return a.i.id == b.i.id || a.i.id == b.j.id ||
+         a.j.id == b.i.id || a.j.id == b.j.id;
+}
+
+// Gets the town that's common to 2 pairs
+Town pair_common(Pair a, Pair b) {
+  if (a.i.id == b.i.id || a.i.id == b.j.id) return a.i;
+  if (a.j.id == b.i.id || a.j.id == b.j.id) return a.j;
 }
 
 Subtour *next_subtour(TSP tsp, int *vars) {
-  // find the next subtour 'starting' point
-  int start = -1;
-  for (int i = 0; i < tsp.n; ++i) {
-    if (vars[i] != -1) {
-      start = i;
-      break;
-    }
+  // find the next subtour starting point
+  int start = 0;
+  for (; start < tsp.n; ++start) {
+    if (vars[start] != -1) break;
   }
+  // No unused starting point: all subtours found
+  if (start == tsp.n) return NULL;
   
-  if (start == -1) return NULL; // all subtours found
-  
+  Pair prev = tsp.pairs[vars[start]];
   Subtour *subtour = malloc(sizeof(Subtour));
+  subtour->tour = malloc(sizeof(Pair) * tsp.n);
+  subtour->tour[0] = prev;
   subtour->n = 1;
-  subtour->tour = malloc(sizeof(int) * tsp.n);
-  subtour->tour[0] = vars[start];
   vars[start] = -1;
   
   while(1) {
-    Pair fst = tsp.pairs[subtour->tour[0]];
-    Pair snd = tsp.pairs[subtour->tour[subtour->n - 1]];
-    
     for (int i = start + 1; i < tsp.n; ++i) {
-      if (vars[i] == -1) continue; // already used
-      
+      if (vars[i] == -1) continue; // Already used
       Pair cur = tsp.pairs[vars[i]];
-      // Check if this town leads into the first town or follows the last
-      int fst_adj = pairs_adj(cur, fst);
-      int snd_adj = pairs_adj(cur, snd);
+      // Make sure this town follows on from the last town found
+      if (!pairs_adj(cur, prev)) continue;
       
-      if (!(fst_adj || snd_adj)) continue;
-      
-      // New town is after the current last so just put it at the end
-      if (snd_adj) {
-        subtour->tour[subtour->n] = vars[i];
-        snd = cur;
-      }
-      // Otherwise move all points up and insert the new town at the start
-      else {
-        for (int j = subtour->n + 1; j > 0; --j) {
-          subtour->tour[j] = subtour->tour[j-1];
-        }
-        subtour->tour[0] = vars[i];
-        fst = cur;
-      }
-      
-      subtour->n++;
+      prev = subtour->tour[subtour->n++] = cur;
       vars[i] = -1;
+      break;
     }
     
-    // First and last points are adjacent, subtour found
-    if (pairs_adj(fst, snd)) break;
+    // First and last points are adjacent: subtour complete
+    if (subtour->n > 2 && pairs_adj(subtour->tour[0], prev)) break;
   }
   
   return subtour;
