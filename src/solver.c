@@ -43,14 +43,14 @@ Town *tsp_open(char *path, int *n) {
     if (x == NULL || y == NULL) continue; // line doesn't contain a point
     
     Town town = { *n, atoi(num), atof(x), atof(y) };
-    
-    (*n)++;
-    if ((*n) - 1 % 100 == 0) { // allocate memory every 100 lines
+    // Expand the list every 100 towns
+    if (*n % 100 == 0) {
       offset += 100;
       towns = realloc(towns, sizeof(town) * offset);
     }
     
-    towns[(*n) - 1] = town;
+    towns[*n] = town;
+    (*n)++;
   }
   
   fclose(file);
@@ -64,10 +64,10 @@ TSP tsp_init(char *name) {
   Town *towns = tsp_open(name, &n);
   
   // The number of unique pairs of towns
-  int cols = (n * (n - 1)) / 2;
+  int npairs = (n * (n - 1)) / 2;
   
-  Pair *pairs = malloc(sizeof(Pair) * cols);
-  double *dists = malloc(sizeof(double) * cols);
+  Pair *pairs = malloc(sizeof(Pair) * npairs);
+  double *dists = malloc(sizeof(double) * npairs);
   
   for (int i = 0; i < n; ++i) {
     if (i >= n - 1) continue;
@@ -82,7 +82,7 @@ TSP tsp_init(char *name) {
     }
   }
   
-  TSP tsp = {n, cols, dists, pairs};
+  TSP tsp = {n, npairs, dists, pairs};
   
   return tsp;
 }
@@ -187,13 +187,13 @@ Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
   
   struct timespec code_start = timer_start();
   
-  // collect all active solution variables
+  // Collect all active solution variables
   int count = 0;
   int *vars = malloc(sizeof(int) * tsp.n);
   for (int i = 0; i < tsp.cols; ++i) {
     if (x[i] == 0) continue;
     vars[count++] = i;
-    if (count == tsp.n) break; // all active solution vars found
+    if (count == tsp.n) break; // All active solution vars found
   }
   
   Subtour *subtour;
@@ -211,7 +211,7 @@ Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
 void cplex_constrain(Solution solution, CPLEX cplex) {
   if (solution.n == 0) return;
   
-  for (int i = 0, half = solution.n / 2; i < half; i++) {
+  for (int i = 0, half = solution.n / 2; i < half; ++i) {
     Subtour *subtour = solution.subtours[i];
     
     double rhs[1] = {subtour->n - 1};
@@ -219,8 +219,8 @@ void cplex_constrain(Solution solution, CPLEX cplex) {
     int rmatbeg[1] = {0};
     
     double *rmatval = malloc(sizeof(double) * subtour->n);
-    for (int i = 0; i < subtour->n; i++) {
-      rmatval[i] = 1;
+    for (int j = 0; j < subtour->n; ++j) {
+      rmatval[j] = 1;
     }
     
     char str[16];
@@ -228,8 +228,8 @@ void cplex_constrain(Solution solution, CPLEX cplex) {
     char *contraints[1] = {strdup(str)};
     
     int *tour = malloc(sizeof(int) * subtour->n);
-    for (int i = 0; i < subtour->n; ++i) {
-      tour[i] = subtour->tour[i].id;
+    for (int j = 0; j < subtour->n; ++j) {
+      tour[j] = subtour->tour[j].id;
     }
     
     CPXaddrows(cplex.env, cplex.lp, 0, 1, subtour->n, rhs, senses,
