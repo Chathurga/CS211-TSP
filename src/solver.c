@@ -197,8 +197,8 @@ Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
   }
   
   Subtour *subtour;
-  while (subtour = next_subtour(tsp, vars)) {
-    insert_subtour(subtour, solution.subtours, &(solution.n));
+  while (subtour = subtour_next(tsp, vars)) {
+    subtour_insert(subtour, solution.subtours, &(solution.n));
   }
   
   free(vars);
@@ -264,7 +264,7 @@ int pair_pos(int i, int j, int n) {
 
 // Checks if two pairs of towns are adjacent
 // This means that they are next to each other in a tour
-int pairs_adj(Pair a, Pair b) {
+int pair_adj(Pair a, Pair b) {
   return a.i.id == b.i.id || a.i.id == b.j.id ||
          a.j.id == b.i.id || a.j.id == b.j.id;
 }
@@ -275,7 +275,7 @@ Town pair_common(Pair a, Pair b) {
   if (a.j.id == b.i.id || a.j.id == b.j.id) return a.j;
 }
 
-Subtour *next_subtour(TSP tsp, int *vars) {
+Subtour *subtour_next(TSP tsp, int *vars) {
   // find the next subtour starting point
   int start = 0;
   for (; start < tsp.n; ++start) {
@@ -296,7 +296,7 @@ Subtour *next_subtour(TSP tsp, int *vars) {
       if (vars[i] == -1) continue; // Already used
       Pair cur = tsp.pairs[vars[i]];
       // Make sure this town follows on from the last town found
-      if (!pairs_adj(cur, prev)) continue;
+      if (!pair_adj(cur, prev)) continue;
       
       prev = subtour->tour[subtour->n++] = cur;
       vars[i] = -1;
@@ -304,13 +304,13 @@ Subtour *next_subtour(TSP tsp, int *vars) {
     }
     
     // First and last points are adjacent: subtour complete
-    if (subtour->n > 2 && pairs_adj(subtour->tour[0], prev)) break;
+    if (subtour->n > 2 && pair_adj(subtour->tour[0], prev)) break;
   }
   
   return subtour;
 }
 
-void insert_subtour(Subtour *subtour, Subtour **list, int *n) {
+void subtour_insert(Subtour *subtour, Subtour **list, int *n) {
   int inserted = 0;
   for (int i = 0; i < *n; i++) {
     if (subtour->n < list[i]->n) {

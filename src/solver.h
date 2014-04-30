@@ -59,8 +59,8 @@ int shortest(const void *, const void *);
 
 int pair_pos(int, int, int);
 
-Subtour *next_subtour(TSP tsp, int *vars);
+Subtour *subtour_next(TSP tsp, int *vars);
 
-void insert_subtour(Subtour *, Subtour **, int *);
+void subtour_insert(Subtour *, Subtour **, int *);
 
 #endif
