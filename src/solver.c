@@ -92,7 +92,6 @@ void tsp_cplex_end(TSP tsp, CPLEX cplex, Solution solution) {
   CPXcloseCPLEX(&cplex.env);
   free(tsp.distances);
   free(tsp.pairs);
-  cycle_free(solution);
 }
 
 // Starts the CPLEX environment
@@ -196,14 +195,12 @@ Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
     if (count == tsp.n) break; // All active solution vars found
   }
   
-  Subtour *subtour;
-  while (subtour = subtour_next(tsp, vars)) {
-    subtour_insert(subtour, solution.subtours, &(solution.n));
+  while (subtour_exists(tsp, vars)) {
+    subtour_insert(subtour_get(tsp, vars), solution.subtours, &(solution.n));
   }
   
   free(vars);
   solution.work_time = timer_end(code_start);
-  //cycle_free(prev);
   
   return solution;
 }
@@ -212,14 +209,14 @@ void cplex_constrain(Solution solution, CPLEX cplex) {
   if (solution.n == 0) return;
   
   for (int i = 0, half = solution.n / 2; i < half; ++i) {
-    Subtour *subtour = solution.subtours[i];
+    Subtour subtour = solution.subtours[i];
     
-    double rhs[1] = {subtour->n - 1};
+    double rhs[1] = {subtour.n - 1};
     char senses[1] = {'L'};
     int rmatbeg[1] = {0};
     
-    double *rmatval = malloc(sizeof(double) * subtour->n);
-    for (int j = 0; j < subtour->n; ++j) {
+    double *rmatval = malloc(sizeof(double) * subtour.n);
+    for (int j = 0; j < subtour.n; ++j) {
       rmatval[j] = 1;
     }
     
@@ -227,23 +224,14 @@ void cplex_constrain(Solution solution, CPLEX cplex) {
     sprintf(str, "pass(%d)", solution.i);
     char *contraints[1] = {strdup(str)};
     
-    int *tour = malloc(sizeof(int) * subtour->n);
-    for (int j = 0; j < subtour->n; ++j) {
-      tour[j] = subtour->tour[j].id;
+    int *tour = malloc(sizeof(int) * subtour.n);
+    for (int j = 0; j < subtour.n; ++j) {
+      tour[j] = subtour.tour[j].id;
     }
     
-    CPXaddrows(cplex.env, cplex.lp, 0, 1, subtour->n, rhs, senses,
+    CPXaddrows(cplex.env, cplex.lp, 0, 1, subtour.n, rhs, senses,
                rmatbeg, tour, rmatval, NULL, contraints);
   }
-}
-
-// Free memory used by a solve cycle
-void cycle_free(Solution solution) {
-  for (int i = 0; i < solution.n; i++) {
-    free(solution.subtours[i]->tour);
-  }
-  
-  free(solution.subtours);
 }
 
 // compares two subtours by checking their length
@@ -275,20 +263,26 @@ Town pair_common(Pair a, Pair b) {
   if (a.j.id == b.i.id || a.j.id == b.j.id) return a.j;
 }
 
-Subtour *subtour_next(TSP tsp, int *vars) {
+// Check if there's another subtour that hasn't been detected
+// Once a solution var gets used it's to -1, check for this
+int subtour_exists(TSP tsp, int *vars) {
+  for (int i = 0; i < tsp.n; ++i) {
+    if (vars[i] != -1) return 1;
+  }
+  return 0;
+}
+
+Subtour subtour_get(TSP tsp, int *vars) {
   // find the next subtour starting point
   int start = 0;
   for (; start < tsp.n; ++start) {
     if (vars[start] != -1) break;
   }
-  // No unused starting point: all subtours found
-  if (start == tsp.n) return NULL;
   
   Pair prev = tsp.pairs[vars[start]];
-  Subtour *subtour = malloc(sizeof(Subtour));
-  subtour->tour = malloc(sizeof(Pair) * tsp.n);
-  subtour->tour[0] = prev;
-  subtour->n = 1;
+  Subtour subtour = { 1, NULL };
+  subtour.tour = malloc(sizeof(Pair) * tsp.n);
+  subtour.tour[0] = prev;
   vars[start] = -1;
   
   while(1) {
@@ -298,22 +292,22 @@ Subtour *subtour_next(TSP tsp, int *vars) {
       // Make sure this town follows on from the last town found
       if (!pair_adj(cur, prev)) continue;
       
-      prev = subtour->tour[subtour->n++] = cur;
+      prev = subtour.tour[subtour.n++] = cur;
       vars[i] = -1;
       break;
     }
     
     // First and last points are adjacent: subtour complete
-    if (subtour->n > 2 && pair_adj(subtour->tour[0], prev)) break;
+    if (subtour.n > 2 && pair_adj(subtour.tour[0], prev)) break;
   }
   
   return subtour;
 }
 
-void subtour_insert(Subtour *subtour, Subtour **list, int *n) {
+void subtour_insert(Subtour subtour, Subtour *list, int *n) {
   int inserted = 0;
   for (int i = 0; i < *n; i++) {
-    if (subtour->n < list[i]->n) {
+    if (subtour.n < list[i].n) {
       for (int j = *n; j > i; j--) {
         list[j] = list[j-1];
       }

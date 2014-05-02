@@ -38,13 +38,13 @@ typedef struct {
 
 // Various info recorded about a TSP solve cycle
 typedef struct {
-  int i;              // Pass number
-  double distance;    // Total distance of subtours
-  int work_time;      // How long the non-cplex code took
-  int cplex_time;     // How long the cplex code took
+  int i;             // Pass number
+  double distance;   // Total distance of subtours
+  int work_time;     // How long the non-cplex code took
+  int cplex_time;    // How long the cplex code took
   
-  int n;              // The number of subtours generated
-  Subtour **subtours; // List of subtours sorted by length
+  int n;             // The number of subtours generated
+  Subtour *subtours; // List of subtours sorted by length
 } Solution;
 
 CPLEX cplex_start();
@@ -59,8 +59,8 @@ int shortest(const void *, const void *);
 
 int pair_pos(int, int, int);
 
-Subtour *subtour_next(TSP tsp, int *vars);
-
-void subtour_insert(Subtour *, Subtour **, int *);
+int subtour_exists(TSP tsp, int *vars);
+Subtour subtour_get(TSP tsp, int *vars);
+void subtour_insert(Subtour, Subtour *, int *);
 
 #endif
