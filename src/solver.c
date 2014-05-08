@@ -324,3 +324,12 @@ void subtour_insert(Subtour subtour, Subtour *list, int *n) {
   
   ++(*n);
 }
+
+void subtour_print(Subtour subtour) {
+  for (int i = 0; i < subtour.n; i++) {
+    Town t = pair_common(subtour.tour[i], subtour.tour[(i + 1) % subtour.n]);
+    printf("%d", t.num);
+    if (i != subtour.n - 1) printf(".");
+  }
+  printf("\n\n");
+}

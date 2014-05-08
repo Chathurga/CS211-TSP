@@ -31,8 +31,9 @@ int main (int argc, char *argv[]) {
   int total = timer_end(start);
   
   printf("\nSolved! Best Route: %.2f\n", solution.distance);
-  printf("Solve Time: %dms\n\n", total - presolve);
-  printf("Total Time: %dms\n\n", total);
+  subtour_print(solution.subtours[0]);
+  printf("Solve Time: %dms\n", total - presolve);
+  printf("Total Time: %dms\n", total);
   
   return 0;
 }
