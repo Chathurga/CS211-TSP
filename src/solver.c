@@ -208,7 +208,7 @@ Solution cplex_solve(TSP tsp, Solution prev, CPLEX cplex) {
 void cplex_constrain(Solution solution, CPLEX cplex) {
   if (solution.n == 0) return;
   
-  for (int i = 0, half = solution.n / 2; i < half; ++i) {
+  for (int i = 0, lim = solution.n - 1; i < lim; ++i) {
     Subtour subtour = solution.subtours[i];
     
     double rhs[1] = {subtour.n - 1};
